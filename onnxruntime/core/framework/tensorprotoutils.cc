@@ -27,19 +27,17 @@ using namespace ::onnxruntime::common;
 
 // Provide template specializations for onnxruntime-specific types.
 namespace ONNX_NAMESPACE {
-template <typename T>
-std::string ONNXStringToString(const T& onnx_string);
 
-template <>
-std::string ONNXStringToString(const std::string& onnx_string) {
-  return onnx_string;
-}
-
-template <>
-std::string ONNXStringToString(const std::wstring& onnx_string) {
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+#ifdef _WIN32
+static std::string ONNXStringToString(const std::wstring& onnx_string) {
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t> > converter;
   return converter.to_bytes(onnx_string);
 }
+#else
+static const std::string& ONNXStringToString(const std::string& onnx_string) {
+  return onnx_string;
+}
+#endif
 
 template <>
 TensorProto ToTensor<onnxruntime::MLFloat16>(const onnxruntime::MLFloat16& value) {

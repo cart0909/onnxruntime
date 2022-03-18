@@ -13,19 +13,16 @@
 #include "core/platform/env.h"
 
 namespace onnxruntime {
-template <typename T>
-std::string ONNXStringToString(const T& onnx_string);
-
-template <>
-std::string ONNXStringToString(const std::string& onnx_string) {
-  return onnx_string;
-}
-
-template <>
-std::string ONNXStringToString(const std::wstring& onnx_string) {
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+#ifdef _WIN32
+static std::string ONNXStringToString(const std::wstring& onnx_string) {
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t> > converter;
   return converter.to_bytes(onnx_string);
 }
+#else
+static const std::string& ONNXStringToString(const std::string& onnx_string) {
+  return onnx_string;
+}
+#endif
 
 Status Initializer::ReadExternalRawData(
     const ONNX_NAMESPACE::TensorProto& tensor_proto, const Path& model_path, std::vector<char>& raw_data) {
