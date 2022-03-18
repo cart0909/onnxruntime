@@ -113,12 +113,7 @@ static common::Status DeserializeTensorProto(const Env& env, const std::basic_st
   const OrtMemoryInfo& alloc_info = m.GetAllocInfo();
   if (strcmp(alloc_info.name, CPU) == 0 || alloc_info.mem_type == OrtMemTypeCPUOutput) {
     // deserialize directly to CPU tensor
-    if (external_data_map && external_data_map->size() > 0) {
-      return utils::TensorProtoToMLValue(env, *external_data_map, tensor_proto, m, ort_value);
-    }
-    else {
-      return utils::TensorProtoToMLValue(env, proto_path.c_str(), tensor_proto, m, ort_value, deleter);
-    }
+    return utils::TensorProtoToMLValue(env, proto_path.c_str(), external_data_map, tensor_proto, m, ort_value, deleter);
   }
 
   // deserialize and copy. In the copy stage, it won't check if the buffer has enough room.
@@ -142,25 +137,19 @@ static common::Status DeserializeTensorProto(const Env& env, const std::basic_st
   std::unique_ptr<char[]> data(new char[cpu_tensor_length]);
   std::unique_ptr<Tensor> p_tensor;
   OrtValue tmp_ort_value;
-  std::unique_ptr<OrtCallback> d = nullptr;
+  OrtCallback d;
 
-  if (external_data_map && external_data_map->size() > 0) {
-    ORT_RETURN_IF_ERROR(utils::TensorProtoToMLValue(env, *external_data_map, tensor_proto,
-                                                    MemBuffer(data.get(), cpu_tensor_length, default_cpu_memory_info),
-                                                    tmp_ort_value));
-  } else {
-    d = std::make_unique<OrtCallback>();
-    ORT_RETURN_IF_ERROR(utils::TensorProtoToMLValue(env, proto_path.c_str(), tensor_proto,
-                                                    MemBuffer(data.get(), cpu_tensor_length, default_cpu_memory_info),
-                                                    tmp_ort_value, *d));
-  }
+  ORT_RETURN_IF_ERROR(utils::TensorProtoToMLValue(env, proto_path.c_str(), external_data_map, tensor_proto,
+                                                  MemBuffer(data.get(), cpu_tensor_length, default_cpu_memory_info),
+                                                  tmp_ort_value, d));
+
   const Tensor& p_deserialize_tensor = tmp_ort_value.Get<Tensor>();
 
   p_tensor = onnxruntime::make_unique<Tensor>(p_deserialize_tensor.DataType(), p_deserialize_tensor.Shape(), m.GetBuffer(),
                                               m.GetAllocInfo());
   // TODO: does this function work for string tensor?
   Status copy_status = data_transfer_mgr.CopyTensor(p_deserialize_tensor, *p_tensor);
-  if (d && d->f) d->f(d->param);
+  if (d.f) d.f(d.param);
 
   if (!copy_status.IsOK()) {
     if (copy_status.ErrorMessage().empty()) {

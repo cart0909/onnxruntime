@@ -34,15 +34,9 @@ TensorShape GetTensorShapeFromTensorShapeProto(const ONNX_NAMESPACE::TensorShape
  *                        have any external data or it was loaded from current working dir. This path could be either a
  *                        relative path or an absolute path.
  */
-common::Status TensorProtoToMLValue(const Env& env, const ORTCHAR_T* tensor_proto_path,
+common::Status TensorProtoToMLValue(const Env& env, const ORTCHAR_T* tensor_proto_path, const std::unordered_map<std::string, const void*>* external_data_map,
                                     const ONNX_NAMESPACE::TensorProto& input, const MemBuffer& m, OrtValue& value,
                                     OrtCallback& deleter);
-
-common::Status TensorProtoToMLValue(const Env& env, const std::unordered_map<std::string, const void*>& external_data_map,
-                                    const ONNX_NAMESPACE::TensorProto& tensor_proto, const MemBuffer& m, OrtValue& value);
-
-//common::Status TensorProtoToMLValue(const Env& env, const std::unordered_map<std::string, const void*>& external_data_map,
-//                                    const ONNX_NAMESPACE::TensorProto& tensor_proto, const MemBuffer& m, OrtValue& value);
 
 /** Creates a TensorProto from a Tensor.
     @param[in] tensor the Tensor whose data and shape will be used to create the TensorProto.

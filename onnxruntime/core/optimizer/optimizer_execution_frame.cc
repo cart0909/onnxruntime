@@ -43,7 +43,7 @@ OptimizerExecutionFrame::Info::Info(const std::vector<const Node*>& nodes,
       std::unique_ptr<char[]> data(new char[cpu_tensor_length]);
       std::unique_ptr<Tensor> p_tensor;
       OrtCallback d;
-      ORT_RETURN_IF_ERROR(utils::TensorProtoToMLValue(Env::Default(), nullptr, tensor_proto,
+      ORT_RETURN_IF_ERROR(utils::TensorProtoToMLValue(Env::Default(), nullptr, nullptr, tensor_proto,
                                                       MemBuffer(data.get(), cpu_tensor_length, allocator_ptr_->Info()),
                                                       ort_value, d));
 
