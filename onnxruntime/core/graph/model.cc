@@ -37,7 +37,7 @@ Model::Model(const std::string& graph_name,
              const std::unordered_map<std::string, int>& domain_to_version,
              const std::vector<ONNX_NAMESPACE::FunctionProto>& model_functions,
              const logging::Logger& logger)
-    : model_path_(Path::Parse(model_path)) {
+    : model_path_(Path::Parse(model_path)), external_data_map_(nullptr) {
   model_proto_.set_ir_version(ONNX_NAMESPACE::Version::IR_VERSION);
   model_proto_.mutable_graph()->set_name(graph_name);
   model_metadata_ = model_metadata;
