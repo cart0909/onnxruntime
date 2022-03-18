@@ -15,6 +15,13 @@
 
 namespace onnxruntime {
 
+struct InitializerOption {
+ public:
+  Path model_path = Path();
+  const std::unordered_map<std::string, const void*>* external_data_map = nullptr;
+};
+
+
 class Initializer final {
  public:
   // Construct an initializer with the provided name and data type, with all values initialized to 0
@@ -52,7 +59,7 @@ class Initializer final {
     }
   }
 
-  Initializer(const ONNX_NAMESPACE::TensorProto& tensor_proto, const Path& model_path) {
+  Initializer(const ONNX_NAMESPACE::TensorProto& tensor_proto, const InitializerOption& opt) {
     data_type_ = tensor_proto.data_type();
     if (utils::HasName(tensor_proto)) {
       name_ = tensor_proto.name();
@@ -115,8 +122,14 @@ class Initializer final {
         }
       }
     } else {  // tensor_proto.data_location() == ONNX_NAMESPACE::TensorProto_DataLocation_EXTERNAL
-      const auto status = ReadExternalRawData(tensor_proto, model_path, raw_data_);
-      ORT_ENFORCE(status.IsOK(), "ReadExternalRawData() failed: ", status.ErrorMessage());
+      if (opt.external_data_map != nullptr) {
+        const auto status = ReadExternalRawData(tensor_proto, *opt.external_data_map, raw_data_);
+        ORT_ENFORCE(status.IsOK(), "ReadExternalRawData() failed: ", status.ErrorMessage());
+      }
+      else {
+        const auto status = ReadExternalRawData(tensor_proto, opt.model_path, raw_data_);
+        ORT_ENFORCE(status.IsOK(), "ReadExternalRawData() failed: ", status.ErrorMessage());
+      }
     }
   }
 
@@ -636,6 +649,9 @@ class Initializer final {
  private:
   static Status ReadExternalRawData(
       const ONNX_NAMESPACE::TensorProto& tensor_proto, const Path& model_path, std::vector<char>& raw_data);
+
+  static Status ReadExternalRawData(
+      const ONNX_NAMESPACE::TensorProto& tensor_proto, const std::unordered_map<std::string, const void*>& external_data_map, std::vector<char>& raw_data);
 
   int data_type_;
   std::string name_;

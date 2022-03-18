@@ -22,6 +22,8 @@
 #include <vector>
 #include <utility>
 #include <type_traits>
+#include <algorithm>
+#include <iterator>
 
 namespace Ort {
 
@@ -212,6 +214,9 @@ struct Session : Base<OrtSession> {
   explicit Session(std::nullptr_t) {}
   Session(Env& env, const ORTCHAR_T* model_path, const SessionOptions& options);
   Session(Env& env, const void* model_data, size_t model_data_length, const SessionOptions& options);
+  Session(Env& env, const void* model_data, size_t model_data_length,                                                                        ///< Wraps OrtApi::CreateSessionWithExternalDataFromArray
+          const std::string* external_data_names, const void* const* external_data_buffers, size_t external_data_len,
+          const Ort::SessionOptions& options);
 
   // Run that will allocate the output values
   std::vector<Value> Run(const RunOptions& run_options, const char* const* input_names, const Value* input_values, size_t input_count,

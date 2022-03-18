@@ -271,10 +271,12 @@ InferenceSession::InferenceSession(const SessionOptions& session_options, const 
 }
 
 InferenceSession::InferenceSession(const SessionOptions& session_options, const Environment& session_env,
-                                   const void* model_data, int model_data_len)
+                                   const void* model_data, int model_data_len,
+                                   const std::unordered_map<std::string, const void*>* external_data_map)
     : graph_transformation_mgr_(session_options.max_num_graph_transformation_steps),
       logging_manager_(session_env.GetLoggingManager()),
-      insert_cast_transformer_("CastFloat16Transformer") {
+      insert_cast_transformer_("CastFloat16Transformer"),
+      external_data_map_(external_data_map) {
   const bool result = model_proto_.ParseFromArray(model_data, model_data_len);
   ORT_ENFORCE(result, "Could not parse model successfully while constructing the inference session");
   is_model_proto_parsed_ = true;
@@ -547,14 +549,16 @@ common::Status InferenceSession::Load(std::istream& model_istream) {
   return Load(loader, "model_loading_istream");
 }
 
-common::Status InferenceSession::Load(const void* model_data, int model_data_len) {
+common::Status InferenceSession::Load(const void* model_data, int model_data_len, const std::unordered_map<std::string, const void*>* external_data_map) {
   if (is_model_proto_parsed_) {
     return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL,
                            "ModelProto corresponding to the model to be loaded has already been parsed. "
                            "Invoke Load().");
   }
 
-  auto loader = [this, model_data, model_data_len](std::shared_ptr<onnxruntime::Model>& model) {
+  external_data_map_ = external_data_map;
+
+  auto loader = [this, model_data, model_data_len, external_data_map](std::shared_ptr<onnxruntime::Model>& model) {
     ModelProto model_proto;
 
     const bool result = model_proto.ParseFromArray(model_data, model_data_len);
@@ -569,7 +573,9 @@ common::Status InferenceSession::Load(const void* model_data, int model_data_len
     }
 #endif
 
-    return onnxruntime::Model::Load(std::move(model_proto), PathString(), model,
+    return onnxruntime::Model::Load(std::move(model_proto),
+                                    external_data_map,
+                                    model,
                                     HasLocalSchema() ? &custom_schema_registries_ : nullptr, *session_logger_);
   };
 
@@ -591,8 +597,13 @@ common::Status InferenceSession::Load() {
     }
 #endif
     // Pass on ownership of the parsed ModelProto to the Model instance (its job here is done by this stage)
-    return Model::Load(std::move(this->model_proto_), model_location_, model,
-                       HasLocalSchema() ? &custom_schema_registries_ : nullptr, *session_logger_);
+    if (external_data_map_) {
+      return Model::Load(std::move(this->model_proto_), external_data_map_, model,
+                         HasLocalSchema() ? &custom_schema_registries_ : nullptr, *session_logger_);
+    } else {
+      return Model::Load(std::move(this->model_proto_), model_location_, model,
+                         HasLocalSchema() ? &custom_schema_registries_ : nullptr, *session_logger_);
+    }
   };
 
   return Load(loader, "model_loading_from_saved_proto");

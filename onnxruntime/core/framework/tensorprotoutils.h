@@ -38,6 +38,12 @@ common::Status TensorProtoToMLValue(const Env& env, const ORTCHAR_T* tensor_prot
                                     const ONNX_NAMESPACE::TensorProto& input, const MemBuffer& m, OrtValue& value,
                                     OrtCallback& deleter);
 
+common::Status TensorProtoToMLValue(const Env& env, const std::unordered_map<std::string, const void*>& external_data_map,
+                                    const ONNX_NAMESPACE::TensorProto& tensor_proto, const MemBuffer& m, OrtValue& value);
+
+//common::Status TensorProtoToMLValue(const Env& env, const std::unordered_map<std::string, const void*>& external_data_map,
+//                                    const ONNX_NAMESPACE::TensorProto& tensor_proto, const MemBuffer& m, OrtValue& value);
+
 /** Creates a TensorProto from a Tensor.
     @param[in] tensor the Tensor whose data and shape will be used to create the TensorProto.
     @param[in] tensor_proto_name the name of the TensorProto.

@@ -836,6 +836,12 @@ struct OrtApi {
    */
   ORT_API2_STATUS(ReleaseAvailableProviders, _In_ char **ptr,
                   _In_ int providers_length);
+
+
+  ORT_API2_STATUS(CreateSessionWithExternalDataFromArray, _In_ const OrtEnv* env, _In_ const void* model_data, size_t model_data_length,
+                  _In_reads_(external_data_len) const char* const* external_data_names,
+                  _In_reads_(external_data_len) const void* const* external_data_buffers,
+                  size_t external_data_len, _In_ const OrtSessionOptions* options, _Outptr_ OrtSession** out);
 };
 
 /*

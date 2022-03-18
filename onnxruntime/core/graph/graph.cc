@@ -2293,6 +2293,10 @@ const Path& Graph::ModelPath() const {
   return owning_model_.ModelPath();
 }
 
+const std::unordered_map<std::string, const void*>* Graph::ExternalDataMap() const {
+  return owning_model_.ExternalDataMap();
+}
+
 void Graph::AddInitializedTensor(const TensorProto& tensor) {
   auto existing = name_to_initial_tensor_.find(tensor.name());
   if (existing != name_to_initial_tensor_.cend()) {

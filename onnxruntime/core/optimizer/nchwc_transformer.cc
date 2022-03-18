@@ -367,7 +367,7 @@ void NchwcTransformerImpl::TransformConv(Node& node) {
     // Reuse the existing NodeArg.
     nchwc_conv_W_arg = filters_it->second;
   } else {
-    Initializer conv_W{*conv_W_tensor_proto, graph_.ModelPath()};
+    Initializer conv_W{*conv_W_tensor_proto, {graph_.ModelPath(), graph_.ExternalDataMap()}};
 
     std::vector<float> reordered_filter(conv_W.size() / output_channels * nchwc_output_channels);
 
@@ -401,7 +401,7 @@ void NchwcTransformerImpl::TransformConv(Node& node) {
       // Reuse the existing NodeArg.
       nchwc_conv_B_arg = biases_it->second;
     } else {
-      Initializer conv_B{*conv_B_tensor_proto, graph_.ModelPath()};
+      Initializer conv_B{*conv_B_tensor_proto, {graph_.ModelPath(), graph_.ExternalDataMap()}};
 
       std::vector<float> aligned_bias(nchwc_output_channels);
       std::copy_n(conv_B.data<float>(), output_channels, aligned_bias.data());
@@ -728,10 +728,11 @@ void NchwcTransformerImpl::TransformBatchNormalization(Node& node) {
     return;
   }
 
-  Initializer bn_scale{*bn_scale_tensor_proto, graph_.ModelPath()};
-  Initializer bn_B{*bn_B_tensor_proto, graph_.ModelPath()};
-  Initializer bn_mean{*bn_mean_tensor_proto, graph_.ModelPath()};
-  Initializer bn_var{*bn_var_tensor_proto, graph_.ModelPath()};
+  InitializerOption opt{graph_.ModelPath(), graph_.ExternalDataMap()};
+  Initializer bn_scale{*bn_scale_tensor_proto, opt};
+  Initializer bn_B{*bn_B_tensor_proto, opt};
+  Initializer bn_mean{*bn_mean_tensor_proto, opt};
+  Initializer bn_var{*bn_var_tensor_proto, opt};
 
   // Calculate the scale and bias for the replacement convolution.
   bn_var.add(epsilon);
@@ -884,7 +885,7 @@ void NchwcTransformerImpl::TransformResize(Node& node) {
     return;
   }
 
-  Initializer scales{*scales_tensor_proto, graph_.ModelPath()};
+  Initializer scales{*scales_tensor_proto, {graph_.ModelPath(), graph_.ExternalDataMap()}};
   auto* scales_data = scales.template data<float>();
 
   // Cast the scales to integers and verify that the scales are positive and

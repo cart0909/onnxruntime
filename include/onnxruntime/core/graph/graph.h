@@ -501,6 +501,9 @@ class Graph {
   /** Gets the path of the owning model, if any. */
   const Path& ModelPath() const;
 
+  /** Gets the external data mapping table, if any. */
+  const std::unordered_map<std::string, const void*>* ExternalDataMap() const;
+
   /** Add an initializer tensor to the Graph. */
   void AddInitializedTensor(const ONNX_NAMESPACE::TensorProto& tensor_proto);
 

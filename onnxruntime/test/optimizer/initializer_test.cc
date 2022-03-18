@@ -78,10 +78,10 @@ TEST(OptimizerInitializerTest, LoadExternalData) {
         SetTensorProtoExternalData("length", std::to_string(length * sizeof(int32_t)), tensor_proto);
 
         if (offset + length <= tensor_data_span.size()) {
-          Initializer i(tensor_proto, tensor_data_dir_path);
+          Initializer i(tensor_proto, {tensor_data_dir_path});
           EXPECT_EQ(gsl::make_span(i.data<int32_t>(), i.size()), tensor_data_span.subspan(offset, length));
         } else {
-          EXPECT_THROW(Initializer i(tensor_proto, tensor_data_dir_path), OnnxRuntimeException);
+          EXPECT_THROW(Initializer i(tensor_proto, {tensor_data_dir_path}), OnnxRuntimeException);
         }
       };
 
@@ -93,8 +93,8 @@ TEST(OptimizerInitializerTest, LoadExternalData) {
   check_initializer_load(0, tensor_data.size() + 1);
 
   // bad model paths
-  EXPECT_THROW(Initializer i(tensor_proto_base, Path{}), OnnxRuntimeException);
-  EXPECT_THROW(Initializer i(tensor_proto_base, Path::Parse(ToPathString("invalid/directory"))), OnnxRuntimeException);
+  EXPECT_THROW(Initializer i(tensor_proto_base, {Path{}}), OnnxRuntimeException);
+  EXPECT_THROW(Initializer i(tensor_proto_base, {Path::Parse(ToPathString("invalid/directory"))}), OnnxRuntimeException);
 
   // bad length
   {
@@ -102,7 +102,7 @@ TEST(OptimizerInitializerTest, LoadExternalData) {
     tensor_proto.clear_dims();
     SetTensorProtoExternalData("length", std::to_string(tensor_data.size() * sizeof(int32_t) + 1), tensor_proto);
 
-    EXPECT_THROW(Initializer i(tensor_proto, tensor_data_dir_path), OnnxRuntimeException);
+    EXPECT_THROW(Initializer i(tensor_proto, {tensor_data_dir_path}), OnnxRuntimeException);
   }
 }
 }  // namespace test

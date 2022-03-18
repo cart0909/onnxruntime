@@ -79,13 +79,14 @@ Model::Model(const std::string& graph_name,
 }
 
 Model::Model(const ModelProto& model_proto, const PathString& model_path,
-             const IOnnxRuntimeOpSchemaRegistryList* local_registries, const logging::Logger& logger)
-    : Model(ModelProto(model_proto), model_path, local_registries, logger) {
+             const IOnnxRuntimeOpSchemaRegistryList* local_registries, const logging::Logger& logger,
+             const std::unordered_map<std::string, const void*>* external_data_map)
+    : Model(ModelProto(model_proto), model_path, local_registries, logger, external_data_map) {
 }
 
 Model::Model(ModelProto&& model_proto, const PathString& model_path, const IOnnxRuntimeOpSchemaRegistryList* local_registries,
-             const logging::Logger& logger)
-    : model_path_(Path::Parse(model_path)) {
+             const logging::Logger& logger, const std::unordered_map<std::string, const void*>* external_data_map)
+    : model_path_(Path::Parse(model_path)), external_data_map_(external_data_map) {
   if (!utils::HasGraph(model_proto)) {
     throw std::invalid_argument("ModelProto does not have a graph.");
   }
@@ -301,6 +302,56 @@ Status Model::Load(ModelProto&& model_proto,
   GSL_SUPPRESS(r .11)
   try {
     model.reset(new Model(std::move(model_proto), model_path, local_registries, logger));
+  } catch (const std::exception& ex) {
+    return Status(ONNXRUNTIME, INVALID_ARGUMENT, "Failed to load model with error: " + std::string(ex.what()));
+  }
+
+  Graph::ResolveOptions options;
+  options.no_proto_sync_required = true;
+  ORT_RETURN_IF_ERROR(model->MainGraph().Resolve(options));
+
+  return Status::OK();
+}
+
+Status Model::Load(const ModelProto& model_proto,
+                   const std::unordered_map<std::string, const void*>* external_data_map,
+                   std::shared_ptr<Model>& model,
+                   const IOnnxRuntimeOpSchemaRegistryList* local_registries,
+                   const logging::Logger& logger) {
+  // we expect a graph to be present
+  if (!utils::HasGraph(model_proto)) {
+    return Status(ONNXRUNTIME, INVALID_ARGUMENT, "No graph was found in the protobuf.");
+  }
+
+  // need to call private ctor so can't use make_shared
+  GSL_SUPPRESS(r .11)
+  try {
+    model.reset(new Model(model_proto, local_registries, logger, external_data_map));
+  } catch (const std::exception& ex) {
+    return Status(ONNXRUNTIME, INVALID_ARGUMENT, "Failed to load model with error: " + std::string(ex.what()));
+  }
+
+  Graph::ResolveOptions options;
+  options.no_proto_sync_required = true;
+  ORT_RETURN_IF_ERROR(model->MainGraph().Resolve(options));
+
+  return Status::OK();
+}
+
+Status Model::Load(ModelProto&& model_proto,
+                   const std::unordered_map<std::string, const void*>* external_data_map,
+                   std::shared_ptr<Model>& model,
+                   const IOnnxRuntimeOpSchemaRegistryList* local_registries,
+                   const logging::Logger& logger) {
+  // we expect a graph to be present
+  if (!utils::HasGraph(model_proto)) {
+    return Status(ONNXRUNTIME, INVALID_ARGUMENT, "No graph was found in the protobuf.");
+  }
+
+  // need to call private ctor so can't use make_shared
+  GSL_SUPPRESS(r .11)
+  try {
+    model.reset(new Model(std::move(model_proto), local_registries, logger, external_data_map));
   } catch (const std::exception& ex) {
     return Status(ONNXRUNTIME, INVALID_ARGUMENT, "Failed to load model with error: " + std::string(ex.what()));
   }

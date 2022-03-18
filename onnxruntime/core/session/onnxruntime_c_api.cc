@@ -459,6 +459,30 @@ ORT_API_STATUS_IMPL(OrtApis::CreateSessionFromArray, _In_ const OrtEnv* env, _In
   API_IMPL_END
 }
 
+ORT_API_STATUS_IMPL(OrtApis::CreateSessionWithExternalDataFromArray, _In_ const OrtEnv* env, _In_ const void* model_data, size_t model_data_length,
+                    _In_reads_(external_data_len)  const char* const* external_data_names,
+                    _In_reads_(external_data_len) const void* const* external_data_buffers,
+                    size_t external_data_len, _In_ const OrtSessionOptions* options, _Outptr_ OrtSession** out) {
+  API_IMPL_BEGIN
+  std::unique_ptr<onnxruntime::InferenceSession> sess;
+  std::unordered_map<std::string, const void*> external_data_map;
+  for (size_t i = 0; i < external_data_len; ++i) {
+    external_data_map.insert(std::make_pair(external_data_names[i], external_data_buffers[i]));
+  }
+
+  try {
+    sess = onnxruntime::make_unique<onnxruntime::InferenceSession>(
+        options == nullptr ? onnxruntime::SessionOptions() : options->value,
+        env->GetEnvironment(), model_data, static_cast<int>(model_data_length),
+        &external_data_map);
+  } catch (const std::exception& e) {
+    return OrtApis::CreateStatus(ORT_FAIL, e.what());
+  }
+  return LoadAndInitializeSession(env, options, sess, out);
+  API_IMPL_END
+}
+                    
+
 ORT_API_STATUS_IMPL(OrtApis::Run, _Inout_ OrtSession* sess, _In_opt_ const OrtRunOptions* run_options,
                     _In_reads_(input_len) const char* const* input_names,
                     _In_reads_(input_len) const OrtValue* const* input, size_t input_len,
@@ -1614,6 +1638,7 @@ static constexpr OrtApi ort_api_1_to_4 = {
     // Version 4 - In development, feel free to add/remove/rearrange here
     &OrtApis::GetAvailableProviders,
     &OrtApis::ReleaseAvailableProviders,
+    &OrtApis::CreateSessionWithExternalDataFromArray,
 };
 
 // Assert to do a limited check to ensure Version 1 of OrtApi never changes (will detect an addition or deletion but not if they cancel out each other)

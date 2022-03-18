@@ -43,29 +43,33 @@ class Model {
   // hold a copy of <model_proto>.
   explicit Model(const ONNX_NAMESPACE::ModelProto& model_proto,
                  const IOnnxRuntimeOpSchemaRegistryList* local_registries,
-                 const logging::Logger& logger)
-      : Model(model_proto, PathString(), local_registries, logger) {}
+                 const logging::Logger& logger,
+                 const std::unordered_map<std::string, const void*>* external_data_map = nullptr)
+      : Model(model_proto, PathString(), local_registries, logger, external_data_map) {}
 
   // NOTE: after calling this constructor, <*this> model will
   // hold a copy of <model_proto>.
   explicit Model(const ONNX_NAMESPACE::ModelProto& model_proto,
                  const PathString& model_path,
                  const IOnnxRuntimeOpSchemaRegistryList* local_registries,
-                 const logging::Logger& logger);
+                 const logging::Logger& logger,
+                 const std::unordered_map<std::string, const void*>* external_data_map = nullptr);
 
   // NOTE: after calling this constructor, <*this> model will
   // own the <model_proto>.
   explicit Model(ONNX_NAMESPACE::ModelProto&& model_proto,
                  const IOnnxRuntimeOpSchemaRegistryList* local_registries,
-                 const logging::Logger& logger)
-      : Model(std::move(model_proto), PathString(), local_registries, logger) {}
+                 const logging::Logger& logger,
+                 const std::unordered_map<std::string, const void*>* external_data_map = nullptr)
+      : Model(std::move(model_proto), PathString(), local_registries, logger, external_data_map) {}
 
   // NOTE: after calling this constructor, <*this> model will
   // own the <model_proto>.
   explicit Model(ONNX_NAMESPACE::ModelProto&& model_proto,
                  const PathString& model_path,
                  const IOnnxRuntimeOpSchemaRegistryList* local_registries,
-                 const logging::Logger& logger);
+                 const logging::Logger& logger,
+                 const std::unordered_map<std::string, const void*>* external_data_map = nullptr);
 
   // Get model's IR version.
   // Return <kNoVersion> if not specified.
@@ -105,6 +109,9 @@ class Model {
 
   // Gets the path from which the model was loaded, if any.
   const Path& ModelPath() const noexcept { return model_path_; }
+
+  // Gets the external data mapping table, if any.
+  const std::unordered_map<std::string, const void*>* ExternalDataMap() const noexcept { return external_data_map_; }
 
   // Get model's main graph.
   Graph& MainGraph() noexcept;
@@ -172,6 +179,12 @@ class Model {
                              const IOnnxRuntimeOpSchemaRegistryList* local_registries,
                              const logging::Logger& logger);
 
+  static common::Status Load(const ONNX_NAMESPACE::ModelProto& model_proto,
+                             const std::unordered_map<std::string, const void*>* external_data_map,
+                             /*out*/ std::shared_ptr<Model>& p_model,
+                             const IOnnxRuntimeOpSchemaRegistryList* local_registries,
+                             const logging::Logger& logger);
+
   static common::Status Load(ONNX_NAMESPACE::ModelProto&& model_proto,
                              /*out*/ std::shared_ptr<Model>& p_model,
                              const IOnnxRuntimeOpSchemaRegistryList* local_registries,
@@ -183,6 +196,11 @@ class Model {
                              const IOnnxRuntimeOpSchemaRegistryList* local_registries,
                              const logging::Logger& logger);
 
+  static common::Status Load(ONNX_NAMESPACE::ModelProto&& model_proto,
+                             const std::unordered_map<std::string, const void*>* external_data_map,
+                             /*out*/ std::shared_ptr<Model>& p_model,
+                             const IOnnxRuntimeOpSchemaRegistryList* local_registries,
+                             const logging::Logger& logger);
  private:
   // Model data.
   ONNX_NAMESPACE::ModelProto model_proto_;
@@ -193,6 +211,9 @@ class Model {
 
   // Path to model file. May be empty.
   const Path model_path_;
+
+  // Pointer to external data mapping table. May be nullptr.
+  const std::unordered_map<std::string, const void*>* external_data_map_;
 
   // Main graph of the model.
   std::unique_ptr<Graph> graph_;

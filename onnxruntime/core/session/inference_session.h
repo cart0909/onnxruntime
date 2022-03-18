@@ -148,7 +148,8 @@ class InferenceSession {
   InferenceSession(const SessionOptions& session_options,
                    const Environment& session_env,
                    const void* model_data,
-                   int model_data_len);
+                   int model_data_len,
+                   const std::unordered_map<std::string, const void*>* external_data_map = nullptr);
 
   virtual ~InferenceSession();
 
@@ -218,7 +219,7 @@ class InferenceSession {
     * @param model_data_len Model data buffer size
     * @return OK if success.
     */
-  common::Status Load(const void* model_data, int model_data_len) ORT_MUST_USE_RESULT;
+  common::Status Load(const void* model_data, int model_data_len, const std::unordered_map<std::string, const void*>* external_data_map = nullptr) ORT_MUST_USE_RESULT;
 
   /**
     * Load an ONNX model from the member model_proto_.
@@ -560,6 +561,8 @@ class InferenceSession {
 
   // Flag indicating if ModelProto has been parsed in an applicable ctor
   bool is_model_proto_parsed_ = false;
+
+  const std::unordered_map<std::string, const void*>* external_data_map_ = nullptr;
 };
 
 struct SessionIOBinding {
