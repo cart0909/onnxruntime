@@ -930,7 +930,7 @@ def generate_build_tree(cmake_path, source_dir, build_dir, cuda_home, cudnn_home
             args.use_openvino or args.use_vitisai or args.gen_doc):
         cmake_args += [
             "-Donnxruntime_USE_FULL_PROTOBUF=ON",
-            "-DProtobuf_USE_STATIC_LIBS=ON"
+            "-DProtobuf_USE_STATIC_LIBS=OFF"
         ]
 
     if (args.use_nuphar or args.use_tvm) and args.llvm_path is not None:
